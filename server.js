@@ -327,23 +327,19 @@ app.get('/api/products/search', async (req, res) => {
     // For now, return mock data
     // Later we'll connect to Shopify API to fetch real products
     const mockProducts = [
-      {
-        id: '10218250895679',
-        title: 'The Inventory Not Tracked Snowboard',
-        image: 'https://cdn.shopify.com/...',
-        variants: [
-          { id: '51819278729535', title: 'Default' }
-        ]
-      },
-      {
-        id: '10218250895680',
-        title: 'Selling Plans Ski Wax',
-        image: 'https://cdn.shopify.com/...',
-        variants: [
-          { id: '51819278860607', title: 'Default' }
-        ]
-      }
-    ];
+  {
+    id: '10218251190591',
+    title: 'Selling Plans Ski Wax',
+    image: 'https://cdn.shopify.com/s/files/1/0869/8706/3109/files/snowboard_wax.png',
+    variants: []
+  },
+  {
+    id: '10218250895679',
+    title: 'The Inventory Not Tracked Snowboard',
+    image: 'https://cdn.shopify.com/s/files/1/0869/8706/3109/files/snowboard_purple_hydrogen.png',
+    variants: []
+  }
+];
     
     // Filter by search query
     const filtered = mockProducts.filter(p => 
