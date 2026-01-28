@@ -51,34 +51,6 @@ app.get('/', (req, res) => {
   `);
 });
 
-// ===== BILLING ROUTES =====
-
-// Initiate subscription
-app.get('/api/billing/subscribe', async (req, res) => {
-  try {
-    const session = await shopify.auth.getSession(req.headers.authorization);
-    const confirmationUrl = await createRecurringCharge(session);
-    res.json({ confirmationUrl });
-  } catch (error) {
-    console.error('Subscription error:', error);
-    res.status(500).json({ error: 'Failed to create subscription' });
-  }
-});
-
-// Check subscription status
-app.get('/api/billing/status', async (req, res) => {
-  try {
-    const session = await shopify.auth.getSession(req.headers.authorization);
-    const status = await checkSubscriptionStatus(session);
-    res.json(status);
-  } catch (error) {
-    console.error('Status check error:', error);
-    res.status(500).json({ error: 'Failed to check subscription status' });
-  }
-});
-
-// ===== END BILLING ROUTES =====
-
 // API: Get all rules for a shop
 app.get('/api/rules', async (req, res) => {
   try {
@@ -262,29 +234,11 @@ app.post('/api/validate-cart', async (req, res) => {
     const violations = [];
     
     // Check product/variant specific rules
-    // Check cart-wide rules
-const cartRules = rules.filter(r => r.ruleType === 'cart');
-const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-
-for (const rule of cartRules) {
-  if (rule.minQuantity && totalQuantity < rule.minQuantity) {
-    violations.push({
-      type: 'cart_min',
-      limit: rule.minQuantity,
-      current: totalQuantity,
-      message: rule.message || `Minimum cart quantity is ${rule.minQuantity} items`,
-    });
-  }
-  
-  if (rule.maxQuantity && totalQuantity > rule.maxQuantity) {
-    violations.push({
-      type: 'cart_max',
-      limit: rule.maxQuantity,
-      current: totalQuantity,
-      message: rule.message || `Maximum cart quantity is ${rule.maxQuantity} items`,
-    });
-  }
-}
+    for (const item of items) {
+      const productRules = rules.filter(r => 
+        (r.ruleType === 'product' && r.targetId === item.product_id?.toString()) ||
+        (r.ruleType === 'variant' && r.targetId === item.variant_id?.toString())
+      );
       
       for (const rule of productRules) {
         if (rule.minQuantity && item.quantity < rule.minQuantity) {
@@ -309,9 +263,31 @@ for (const rule of cartRules) {
       }
     }
     
-    // Check cart-wide limits
+    // Check cart-wide rules
+    const cartRules = rules.filter(r => r.ruleType === 'cart');
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     
+    for (const rule of cartRules) {
+      if (rule.minQuantity && totalQuantity < rule.minQuantity) {
+        violations.push({
+          type: 'cart_min',
+          limit: rule.minQuantity,
+          current: totalQuantity,
+          message: rule.message || `Minimum cart quantity is ${rule.minQuantity} items`,
+        });
+      }
+      
+      if (rule.maxQuantity && totalQuantity > rule.maxQuantity) {
+        violations.push({
+          type: 'cart_max',
+          limit: rule.maxQuantity,
+          current: totalQuantity,
+          message: rule.message || `Maximum cart quantity is ${rule.maxQuantity} items`,
+        });
+      }
+    }
+    
+    // Check global settings limits
     if (settings?.globalMinCart && totalQuantity < settings.globalMinCart) {
       violations.push({
         type: 'cart_min',
