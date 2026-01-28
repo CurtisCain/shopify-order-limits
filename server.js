@@ -262,11 +262,29 @@ app.post('/api/validate-cart', async (req, res) => {
     const violations = [];
     
     // Check product/variant specific rules
-    for (const item of items) {
-      const productRules = rules.filter(r => 
-        (r.ruleType === 'product' && r.targetId === item.product_id?.toString()) ||
-        (r.ruleType === 'variant' && r.targetId === item.variant_id?.toString())
-      );
+    // Check cart-wide rules
+const cartRules = rules.filter(r => r.ruleType === 'cart');
+const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+for (const rule of cartRules) {
+  if (rule.minQuantity && totalQuantity < rule.minQuantity) {
+    violations.push({
+      type: 'cart_min',
+      limit: rule.minQuantity,
+      current: totalQuantity,
+      message: rule.message || `Minimum cart quantity is ${rule.minQuantity} items`,
+    });
+  }
+  
+  if (rule.maxQuantity && totalQuantity > rule.maxQuantity) {
+    violations.push({
+      type: 'cart_max',
+      limit: rule.maxQuantity,
+      current: totalQuantity,
+      message: rule.message || `Maximum cart quantity is ${rule.maxQuantity} items`,
+    });
+  }
+}
       
       for (const rule of productRules) {
         if (rule.minQuantity && item.quantity < rule.minQuantity) {
