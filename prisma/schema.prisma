@@ -1,0 +1,52 @@
+// This is your Prisma schema file for PRODUCTION (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Shop {
+  id                 String   @id
+  name               String
+  email              String?
+  subscriptionId     String?
+  subscriptionStatus String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  rules              Rule[]
+  settings           Settings?
+}
+
+model Rule {
+  id              String   @id @default(uuid())
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId          String
+  ruleType        String   // "product", "collection", "variant", "cart"
+  targetId        String?  // Product ID, Collection ID, or Variant ID (null for cart-wide)
+  targetTitle     String?  // Display name
+  minQuantity     Int?
+  maxQuantity     Int?
+  enabled         Boolean  @default(true)
+  message         String?  // Custom error message
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([shopId])
+}
+
+model Settings {
+  id                    String   @id @default(uuid())
+  shop                  Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId                String   @unique
+  globalMinCart         Int?
+  globalMaxCart         Int?
+  showCartWarning       Boolean  @default(true)
+  blockCheckout         Boolean  @default(true)
+  customMessageEnabled  Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
